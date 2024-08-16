@@ -1,0 +1,21 @@
+github not work means :
+git remote set-url origin https://<username>:<PAT>@github.com/<username>/<repo>.git
+# Set Git to use the credential helper
+git config --global credential.helper store
+git config --global credential.helper cache
+git push -u origin main
+
+
+new code or changes use:
+git add fastapi/new.py
+git commit -m "Add new.py to the fastapi directory"
+git push
+
+
+new code use:
+git init
+git add --all
+git commit -m "first commit"
+git branch -M main
+git remote add origin https://github.com/Ranjithlucky/python-new-fstapi.git
+git push -u origin main
