@@ -6,18 +6,9 @@ import models,schemas,utils
 from database import engine,get_db
 from routers import post,user,auth,oauth
 
-
-
 models.Base.metadata.create_all(bind=engine)
 
-
 app=FastAPI()
-
-
-
-
-    
-
 
 my_post=[{"title":"the flower table","content":"show to go tomorrow","id":1},{"title":"enjoy every moment","content":"choose ur role to fight","id":4},{"title":"the flower table","content":"show to go tomorrow","id":3}]
 
