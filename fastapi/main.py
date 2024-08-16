@@ -1,12 +1,6 @@
 from fastapi import FastAPI,Response, status,HTTPException,Depends
 from  fastapi.params import Body
-
-from typing import Optional,List
 from random import randrange
-import psycopg2
-from psycopg2.extras import RealDictCursor
-
-
 from sqlalchemy.orm import Session
 import models,schemas,utils
 from database import engine,get_db
