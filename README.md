@@ -1,4 +1,6 @@
-ChatGPT
+Usage in Projects:
+Example: In data processing, continue can be used to skip over invalid or missing data while still processing the rest of the dataset.
+Explanation in Interviews: "In one project, I used continue to skip over invalid data entries while processing a large dataset. This allowed the loop to keep running without interruption, ensuring that valid data was still processed."ChatGPT
 
 You said:
 Explain break continue and pass why it usage in project and how to explain in project how it will use experience interview answer
