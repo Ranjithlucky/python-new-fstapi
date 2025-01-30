@@ -1,27 +1,28 @@
-from langchain_google_vertexai import VertexAIEmbeddings
+rom langchain_google_vertexai import VertexAIEmbeddings
 from google.cloud import aiplatform
 import vertexai
-from vertexai.preview.generative_models import GenerativeModel, Part
+from vertexai.preview.generative_models import GenerativeModel
  
 # **SETUP CONFIGURATION**
-project = "cog01jht4hs5k3285da8@mtejnh8g"  # Ensure this is a valid project ID
+project = "cog01jht4hs5k3285da80mtejnh8g"  # Ensure this is a valid project ID
 location = "us-central1"  # Fixed typo in location
 index_name = "INDEX_EP_ID"  # Ensure this is the correct index endpoint ID
  
 # **INITIALIZE GOOGLE CLOUD SERVICES**
 aiplatform.init(project=project, location=location)
-# vertexai.init(project=project, location=location)
-vertexai.init()
-Index_name="test-tririga-index"
-Index_id="7476885777062821888"
-Index_endpoint_id="7120432903430864896"
-Index_endpoint_name="test-tririga-index-endpoint"
+vertexai.init(project=project, location=location)
+ 
+# Index details (ensure these are correct)
+Index_name = "test-tririga-index"
+Index_id = "7476885777062821888"
+Index_endpoint_id = "7120432903430864896"
+Index_endpoint_name = "test-tririga-index-endpoint"
  
 # **LOAD MODELS**
-model = GenerativeModel("gemini-pro")
+model = GenerativeModel(model="gemini-pro")
  
 # **LOAD MATCHING ENGINE INDEX ENDPOINT**
-lakeside_index_ep = aiplatform.MatchingEngineIndexEndpoint(index_name)
+lakeside_index_ep = aiplatform.MatchingEngineIndexEndpoint(index_endpoint_name=index_name)
  
 # **HELPER FUNCTION: GET EMBEDDINGS**
 def get_embedded_data(data):
@@ -43,9 +44,9 @@ response = lakeside_index_ep.find_neighbors(
 matching_ids = [neighbor.id for sublist in response for neighbor in sublist]
  
 # **GENERATE CONTEXT FUNCTION (Placeholder)**
-def generate_context(matching_ids, data):
+def generate_context(matching_ids):
     return f"Retrieved documents for IDs: {matching_ids}"
  
 # **RETRIEVE CONTEXT**
-context = generate_context(matching_ids, query)
+context = generate_context(matching_ids)
 print(context)
