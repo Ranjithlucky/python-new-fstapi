@@ -1,3 +1,189 @@
-__pycache__
-venv\
-.env
+File "C:\Users\mcC0609\OneDrive\projects_demo\venv\Lib\site-packages\google\api_core\grpc_helpers.py", line 76, in error_remapped_callable
+
+    return callable_(*args, **kwargs)
+
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+  File "C:\Users\mcC0609\OneDrive\projects_demo\venv\Lib\site-packages\grpc\_interceptor.py", line 277, in __call__      
+
+    response, ignored_call = self._with_call(
+
+                             ^^^^^^^^^^^^^^^^
+
+  File "C:\Users\mcC0609\OneDrive\projects_demo\venv\Lib\site-packages\grpc\_interceptor.py", line 332, in _with_call    
+
+    return call.result(), call
+
+           ^^^^^^^^^^^^^
+
+  File "C:\Users\mcC0609\OneDrive\projects_demo\venv\Lib\site-packages\grpc\_channel.py", line 440, in result
+
+    raise self
+
+  File "C:\Users\mcC0609\OneDrive\projects_demo\venv\Lib\site-packages\grpc\_interceptor.py", line 315, in continuation  
+
+    response, call = self._thunk(new_method).with_call(
+
+                     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+  File "C:\Users\mcC0609\OneDrive\projects_demo\venv\Lib\site-packages\grpc\_channel.py", line 1198, in with_call        
+
+    return _end_unary_response_blocking(state, call, True, None)
+
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+  File "C:\Users\mcC0609\OneDrive\projects_demo\venv\Lib\site-packages\grpc\_channel.py", line 1006, in _end_unary_response_blocking
+
+    raise _InactiveRpcError(state)  # pytype: disable=not-instantiable
+
+    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+grpc._channel._InactiveRpcError: <_InactiveRpcError of RPC that terminated with:
+
+        status = StatusCode.FAILED_PRECONDITION
+
+        details = "The Cloud Storage bucket of `gs://mcd-sharepoint-docs/embeddings.embed` is in location `us`. It must be in the same regional location as the service location `us-central1`."
+
+        debug_error_string = "UNKNOWN:Error received from peer ipv4:74.125.126.95:443 {grpc_message:"The Cloud Storage bucket of `gs://mcd-sharepoint-docs/embeddings.embed` is in location `us`. It must be in the same regional location as the 
+
+service location `us-central1`.", grpc_status:9, created_time:"2025-01-30T08:18:29.212351+00:00"}"
+>
+ 
+The above exception was the direct cause of the following exception:
+ 
+Traceback (most recent call last):
+
+  File "C:\Users\mcC0609\OneDrive\projects_demo\bucket4.py", line 84, in <module>
+
+    create_vector_index(bucket_name, index_name)
+
+  File "C:\Users\mcC0609\OneDrive\projects_demo\bucket4.py", line 67, in create_vector_index
+
+    lakeside_index = aiplatform.MatchingEngineIndex.create_tree_ah_index(
+
+                     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+  File "C:\Users\mcC0609\OneDrive\projects_demo\venv\Lib\site-packages\google\cloud\aiplatform\matching_engine\matching_engine_index.py", line 558, in create_tree_ah_index
+
+    return cls._create(
+
+           ^^^^^^^^^^^^
+
+  File "C:\Users\mcC0609\OneDrive\projects_demo\venv\Lib\site-packages\google\cloud\aiplatform\base.py", line 863, in wrapper
+
+    return method(*args, **kwargs)
+
+           ^^^^^^^^^^^^^^^^^^^^^^^
+
+  File "C:\Users\mcC0609\OneDrive\projects_demo\venv\Lib\site-packages\google\cloud\aiplatform\matching_engine\matching_engine_index.py", line 218, in _create
+
+    create_lro = api_client.create_index(
+
+                 ^^^^^^^^^^^^^^^^^^^^^^^^
+
+  File "C:\Users\mcC0609\OneDrive\projects_demo\venv\Lib\site-packages\google\cloud\aiplatform_v1\services\index_service\client.py", line 870, in create_index
+
+    response = rpc(
+
+               ^^^^
+
+  File "C:\Users\mcC0609\OneDrive\projects_demo\venv\Lib\site-packages\google\api_core\gapic_v1\method.py", line 131, in 
+
+__call__
+
+    return wrapped_func(*args, **kwargs)
+
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+  File "C:\Users\mcC0609\OneDrive\projects_demo\venv\Lib\site-packages\google\api_core\grpc_helpers.py", line 78, in error_remapped_callable
+
+    raise exceptions.from_grpc_error(exc) from exc
+
+google.api_core.exceptions.FailedPrecondition: 400 The Cloud Storage bucket of `gs://mcd-sharepoint-docs/embeddings.embed` is in location `us`. It must be in the same regional location as the service location `us-central1`.
+ 
+from google.cloud import storage
+import PyPDF2
+from langchain.text_splitter import RecursiveCharacterTextSplitter
+from vertexai.language_models import TextEmbeddingModel
+from google.cloud import aiplatform
+from langchain_google_vertexai import VertexAIEmbeddings
+import vertexai
+ 
+ 
+project = 'cog01jht4hs5k3285da80mtejnh8g'
+location = "us-central1"
+vertexai.init(project=project, location=location)
+ 
+blob= "Getting_Started_with_Google_Cloud_Platform.pdf"
+bucket_name = "mcd-sharepoint-docs"
+ 
+def extract_sentences_from_pdf(blob):
+    with open(blob, 'rb') as file:
+        reader = PyPDF2.PdfReader(file)
+        text = ""
+        for page in reader.pages:
+            if page.extract_text() is not None:
+                text += page.extract_text() + " "
+    sentences = [sentence.strip() for sentence in text.split('. ') if sentence.strip()]
+    return sentences
+ 
+def get_text_chunks(sentences):
+    combined_text="".join(sentences)
+    text_splitter = RecursiveCharacterTextSplitter(
+        chunk_size=1000,
+        chunk_overlap=300,
+        length_function=len,
+    )
+    chunks = text_splitter.split_text(combined_text)
+    return chunks
+ 
+# def get_embedded_data(data):
+#     embeddings = VertexAIEmbeddings(model="text-embedding-005")
+#     return embeddings.embed_documents(data)
+ 
+# # Save the embeddings
+# def save_embeddings_to_bucket(vector, bucket_name, destination_blob_name):
+#     """Saves embeddings to a file and uploads to a Google Cloud Storage bucket."""
+#     embeddings_text="\n".join(" ".join(map(str,vec))for vec in vector)
+#     filename_embed="embedding.embed"
+#     with open (filename_embed,"w") as f:
+#         f.write(embeddings_text)
+#     # Upload the file to Google Cloud Storage
+#     storage_client = storage.Client(project=project)
+#     bucket = storage_client.bucket(bucket_name)
+#     blob = bucket.blob(destination_blob_name)
+#     blob.upload_from_filename(filename_embed)
+#     print(f"Embeddings saved to: gs://{bucket_name}/{destination_blob_name}")
+ 
+# Extract sentences from the PDF
+sentences = extract_sentences_from_pdf(blob)
+chunking = get_text_chunks(sentences)
+# vector= get_embedded_data(chunking)
+# destination_blob_name = "embeddings.embed"  
+# save_embeddings_to_bucket(vector,bucket_name,destination_blob_name)
+ 
+ 
+def create_vector_index(bucket_name, index_name):
+    project = 'cog01jht4hs5k3285da80mtejnh8g'
+    location = "us-central1"
+    aiplatform.init(project=project, location=location)
+    lakeside_index = aiplatform.MatchingEngineIndex.create_tree_ah_index(
+    display_name = index_name,
+    contents_delta_uri = "gs://mcd-sharepoint-docs/embeddings.embed",
+    dimensions = 768,
+    approximate_neighbors_count = 10,
+    )
+                 
+    lakeside_index_endpoint = aiplatform.MatchingEngineIndexEndpoint.create(
+    display_name = index_name,
+    public_endpoint_enabled = True
+    )                      
+ 
+    lakeside_index_endpoint.deploy_index(
+    index = lakeside_index, deployed_index_id = index_name
+    )
+bucket_name = "mcd-sharepoint-docs"
+index_name="McD_poc_project"
+create_vector_index(bucket_name, index_name)
+ 
+ 
