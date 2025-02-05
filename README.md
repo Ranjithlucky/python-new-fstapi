@@ -1,202 +1,599 @@
-When working with Generative AI (GenAI) and data-related tasks, it's crucial to understand several key concepts in Pandas and NumPy. These concepts are foundational for data manipulation, preprocessing, and analysis, which are often prerequisites for building AI models. Here’s a list of important concepts to focus on:
+import os
 
-Pandas Concepts
-DataFrame and Series
+import re
 
-What: DataFrame is a 2-dimensional labeled data structure, and Series is a 1-dimensional labeled array.
-Why Important: Understanding these structures is essential because they are the primary data structures in Pandas, used for storing and manipulating data.
-Usage: Loading datasets, performing data cleaning, and preprocessing tasks.
-Indexing and Slicing
+import pickle
 
-What: Techniques for accessing specific rows, columns, or elements within a DataFrame or Series.
-Why Important: Efficient data selection and retrieval are critical for data exploration and feature engineering.
-Usage: Selecting subsets of data, such as specific columns or rows, for analysis.
-Merging and Joining
+import uuid
 
-What: Combining multiple DataFrames based on a key or index.
-Why Important: Data often comes from multiple sources, and merging/joining is necessary to create a unified dataset.
-Usage: Combining datasets for training models or conducting comprehensive analyses.
-Aggregation and GroupBy
+import json
 
-What: Grouping data based on certain criteria and applying aggregation functions.
-Why Important: Allows for summarizing and extracting meaningful insights from large datasets.
-Usage: Calculating statistics like mean, sum, or count for different groups in the data.
-Data Cleaning
+from dotenv import load_dotenv
 
-What: Handling missing data, duplicates, and erroneous data entries.
-Why Important: Clean data is crucial for the accuracy and reliability of AI models.
-Usage: Filling missing values, removing duplicates, and correcting data types.
-Pivot Tables and Crosstab
+from office365.sharepoint.client_context import ClientContext
 
-What: Reshaping and summarizing data to explore relationships between variables.
-Why Important: Useful for generating insights and understanding data distributions.
-Usage: Creating summary tables for data analysis, especially in exploratory data analysis (EDA).
-Date and Time Manipulation
+from office365.sharepoint.files.file import File
 
-What: Handling and manipulating date and time data.
-Why Important: Time-based data is common in AI projects, and proper handling is necessary for accurate analysis.
-Usage: Extracting specific time components, performing time-series analysis.
-Data Transformation
+from office365.runtime.auth.user_credential import UserCredential
 
-What: Applying functions to transform data columns.
-Why Important: Feature engineering often requires creating new features or modifying existing ones.
-Usage: Scaling, encoding categorical variables, or creating new derived features.
-NumPy Concepts
-Array Creation and Manipulation
+from google.cloud import (storage, aiplatform)
 
-What: Understanding how to create and manipulate NumPy arrays, which are the primary data structure in NumPy.
-Why Important: Arrays are used for numerical computations, which are central to most AI tasks.
-Usage: Creating arrays from lists or generating random arrays for simulations.
-Broadcasting
+from langchain_community.document_loaders import PyMuPDFLoader
 
-What: A method that allows NumPy to perform operations on arrays of different shapes.
-Why Important: Efficiently applies operations across arrays without needing to write complex loops.
-Usage: Element-wise operations on arrays with differing dimensions.
-Vectorization
+from langchain_google_community import GCSFileLoader
 
-What: Applying operations to entire arrays at once rather than iterating through elements.
-Why Important: Improves performance by leveraging NumPy's optimized C-based internals.
-Usage: Performing mathematical operations on large datasets efficiently.
-Indexing and Slicing
+from langchain_google_vertexai import VertexAIEmbeddings
 
-What: Accessing specific elements, rows, or columns within arrays.
-Why Important: Essential for manipulating and retrieving data stored in arrays.
-Usage: Extracting parts of arrays for analysis or modifying specific sections of data.
-Linear Algebra Operations
+from langchain.text_splitter import RecursiveCharacterTextSplitter
 
-What: Performing matrix operations like dot products, matrix multiplication, and inversion.
-Why Important: Linear algebra is foundational for many machine learning algorithms.
-Usage: Calculating transformations, projections, and solving systems of linear equations.
-Random Number Generation
+from langchain_google_vertexai import VectorSearchVectorStore
 
-What: Creating arrays of random numbers or performing stochastic operations.
-Why Important: Useful for creating synthetic data, initializing weights in models, or random sampling.
-Usage: Generating random datasets, shuffling data, or splitting data into training and testing sets.
-Statistical Functions
+                                       
 
-What: Applying statistical functions like mean, median, standard deviation, etc., to arrays.
-Why Important: Basic statistics are essential for understanding data distributions and normalization.
-Usage: Calculating summary statistics for features or normalizing data.
-Reshaping and Resizing Arrays
+load_dotenv()
 
-What: Changing the shape or size of arrays to fit the requirements of different operations.
-Why Important: Proper array dimensions are often required for matrix operations in AI.
-Usage: Reshaping arrays to match input requirements for neural networks or other models.
-Integration of Pandas and NumPy
-What: Using Pandas and NumPy together allows for efficient data manipulation and complex numerical computations.
-Why Important: Combining the power of both libraries enables advanced data analysis and preprocessing, which are crucial for preparing data for AI models.
-Usage: Using NumPy arrays as the underlying data structure for Pandas DataFrames, applying NumPy functions directly to Pandas columns, or converting between the two formats.
-These concepts form the foundation of working with data in Python, especially in the context of preparing and managing datasets for Generative AI projects. Understanding and mastering these concepts will enable you to efficiently handle data, perform preprocessing, and set up your datasets for successful AI model development.
 
-import numpy as np
-import pandas as pd
 
-# 1. Array Creation and Manipulation with NumPy
-# Create a random NumPy array
-array_data = np.random.rand(100, 3)
+PROJECT_ID = os.environ.get("PROJECT_ID")
 
-# Explanation: 
-# The above array has 100 rows and 3 columns filled with random float numbers between 0 and 1.
+PROJECT_LOCATION = os.environ.get("PROJECT_LOCATION")
 
-# 2. Converting NumPy Array to Pandas DataFrame
-df = pd.DataFrame(array_data, columns=['Feature1', 'Feature2', 'Feature3'])
+PROJECT_INPUT_BUCKET = os.environ.get("PROJECT_INPUT_BUCKET")
 
-# Explanation:
-# We convert the NumPy array to a Pandas DataFrame, labeling the columns as Feature1, Feature2, and Feature3.
+PROJECT_OUTPUT_BUCKET = os.environ.get("PROJECT_OUTPUT_BUCKET")
 
-# 3. DataFrame Indexing and Slicing
-# Select the first 10 rows and 'Feature1' column
-subset_df = df.loc[:9, 'Feature1']
 
-# Explanation:
-# We slice the DataFrame to get the first 10 rows of 'Feature1'. This demonstrates how to access specific data.
 
-# 4. Data Transformation - Adding a new column
-df['Feature_Sum'] = df['Feature1'] + df['Feature2'] + df['Feature3']
+EMBEDDINGS = VertexAIEmbeddings(model="text-embedding-005")
 
-# Explanation:
-# We create a new column 'Feature_Sum' which is the sum of 'Feature1', 'Feature2', and 'Feature3'.
-# This is an example of applying arithmetic operations to transform data.
+DIMENSIONS = 768
 
-# 5. Aggregation and GroupBy
-# Group by a binned version of 'Feature1' and calculate mean of 'Feature_Sum'
-df['Feature1_Binned'] = pd.cut(df['Feature1'], bins=5)
-grouped_df = df.groupby('Feature1_Binned')['Feature_Sum'].mean()
 
-# Explanation:
-# Here, 'Feature1' is binned into 5 intervals, and then we calculate the mean of 'Feature_Sum' for each bin.
-# This showcases the usage of `groupby` and aggregation.
 
-# 6. Statistical Operations with NumPy
-mean_feature1 = np.mean(df['Feature1'])
-std_feature1 = np.std(df['Feature1'])
 
-# Explanation:
-# We calculate basic statistics like mean and standard deviation using NumPy, which are crucial for understanding data distributions.
 
-# 7. Data Reshaping
-reshaped_array = array_data.reshape(50, 6)
+SITE_URL = "https://collaborate.mcd.com/sites/MCDProcess"
 
-# Explanation:
-# The original array is reshaped from 100x3 to 50x6. Reshaping is useful when you need to change the dimensionality of the data for various operations.
+FOLDER_URL = "/sites/MCDProcess/Shared Documents/General/GenAI/"
 
-# 8. Handling Missing Data
-# Introduce some NaN values in the DataFrame
-df.iloc[5:10, 1] = np.nan
 
-# Fill NaN values with the mean of the column
-df['Feature2'].fillna(df['Feature2'].mean(), inplace=True)
 
-# Explanation:
-# We introduced NaN values in 'Feature2' and then filled these missing values with the column's mean.
-# Handling missing data is crucial to maintaining data integrity before analysis or modeling.
+aiplatform.init(project=PROJECT_ID, location=PROJECT_LOCATION, staging_bucket=PROJECT_OUTPUT_BUCKET)
 
-# 9. Merging DataFrames
-# Create another DataFrame and merge it with the existing one
-df_extra = pd.DataFrame({
-    'Feature1': df['Feature1'].values,
-    'Extra_Feature': np.random.rand(100)
-})
 
-merged_df = pd.merge(df, df_extra, on='Feature1', how='inner')
 
-# Explanation:
-# We created a new DataFrame `df_extra` and merged it with the original DataFrame `df` on 'Feature1'.
-# Merging is essential when combining datasets from different sources or tables.
-Explanations for Usage:
-NumPy Array Creation and Manipulation:
+def init_sharepoint_config(site_url):
 
-Purpose: Essential for creating and manipulating numerical data efficiently.
-Example: Creating an array with random values.
-Converting NumPy Array to Pandas DataFrame:
+   
 
-Purpose: Facilitates easy manipulation and analysis of data by converting it into a structured format.
-Example: Converting an array into a DataFrame with labeled columns.
-DataFrame Indexing and Slicing:
+    # User credentials
 
-Purpose: Provides quick access to specific parts of the data for analysis.
-Example: Extracting specific rows and columns from the DataFrame.
-Data Transformation:
+    username = os.environ.get("SHAREPOINT_USERNAME")
 
-Purpose: Creating new features or modifying existing ones is crucial for data preparation.
-Example: Adding a new column that sums values from other columns.
-Aggregation and GroupBy:
+    password = os.environ.get("SHAREPOINT_PASSWORD")
 
-Purpose: Summarizing data by grouping allows for meaningful insights.
-Example: Grouping data and calculating the mean of a specific column.
-Statistical Operations with NumPy:
+   
 
-Purpose: Understanding data distribution is key for analysis and modeling.
-Example: Calculating mean and standard deviation.
-Data Reshaping:
+    # Authentication
 
-Purpose: Changing the shape of data arrays to suit different types of analyses or models.
-Example: Reshaping a 100x3 array to 50x6.
-Handling Missing Data:
+    ctx = ClientContext(site_url).with_credentials(UserCredential(username, password))
 
-Purpose: Properly dealing with missing data is crucial for ensuring the quality of the dataset.
-Example: Filling missing values with the mean of the column.
-Merging DataFrames:
+    return ctx
 
-Purpose: Combining datasets for comprehensive analysis or feature enhancement.
-Example: Merging two DataFrames on a common column.
+
+
+def is_new_or_updated(file):
+
+    storage_client = storage.Client()
+
+    bucket = storage_client.bucket(PROJECT_INPUT_BUCKET)
+
+    blobs = bucket.list_blobs()
+
+    is_new = True
+
+
+
+    for blob in blobs:
+
+        if file.properties["Name"] == blob.name:
+
+            is_new = False
+
+    return is_new
+
+
+
+def fetch_files_from_sharepoint_folder(ctx, folder_url):
+
+    folder = ctx.web.get_folder_by_server_relative_url(folder_url)
+
+    files = folder.files
+
+    ctx.load(files)
+
+    ctx.execute_query()
+
+
+
+    # Save files locally
+
+    for file in files:
+
+        if is_new_or_updated(file):
+
+            file_name = file.properties["Name"]
+
+            file_url = file.serverRelativeUrl
+
+            print('Updated file found:', file_url)
+
+            response = File.open_binary(ctx, file_url)
+
+                # local_file.write(response.content)
+
+               
+
+            storage_client = storage.Client()
+
+            bucket = storage_client.bucket(PROJECT_INPUT_BUCKET)
+
+            blob = bucket.blob(file_name)
+
+            blob.upload_from_string(response.content)
+
+
+
+    # Recursively fetch files from subfolders
+
+    subfolders = folder.folders
+
+    ctx.load(subfolders)
+
+    ctx.execute_query()
+
+    for subfolder in subfolders:
+
+        fetch_files_from_sharepoint_folder(ctx, subfolder.serverRelativeUrl)
+
+
+
+# Document Loading, Chunking, Embedding
+
+def load_pdf(file_path):
+
+    """Method for loading pdf file using PyMyPDFLoader"""
+
+    return PyMuPDFLoader(file_path)
+
+
+
+def read_gcp_bucket_file(bucket_name, file_name):
+
+    """Method to read file from GCP Bucket using library"""
+
+    loader = GCSFileLoader(project_name=PROJECT_ID, bucket=bucket_name, blob=file_name, loader_func=load_pdf)
+
+    data = loader.load()
+
+    return data
+
+   
+
+def read_pdfs_from_bucket(bucket_name):
+
+    """Method for read all files from the GCP Bucket"""
+
+    storage_client = storage.Client()
+
+    bucket = storage_client.bucket(bucket_name)
+
+    blobs = bucket.list_blobs()
+
+
+
+    documents = []
+
+    for blob in blobs:
+
+        if blob.name.endswith('.pdf'):
+
+            pdf_content = blob.download_as_bytes()
+
+            documents.append(PyMuPDFLoader(blob))
+
+    return documents
+
+
+
+def chunk_document(documents, chunk_size=1000, chunk_overlap=20):
+
+    """Method to split loaded document data using Splitter library"""
+
+    text_splitter = RecursiveCharacterTextSplitter(chunk_size=chunk_size, chunk_overlap=chunk_overlap)
+
+    all_splits = text_splitter.split_documents(documents)
+
+    return all_splits
+
+
+
+def get_embedded_data(embedding_obj, data):
+
+    """Method to embed given data"""
+
+    return embedding_obj.embed_documents(data)
+
+
+
+def get_text_from_chunks(data):
+
+    """Method for convert splited data into string(plain text)"""
+
+    texts = [str(chunk) for chunk in data]
+
+    return texts
+
+
+
+def save_file_to_bucket(bucket_name, destination_blob_name, vector=None):
+
+    """Saves pickled PDF page embeddings to a Google Cloud Storage bucket."""
+
+    storage_client = storage.Client(project=PROJECT_ID)
+
+    bucket = storage_client.bucket(bucket_name)
+
+    blob = bucket.blob(destination_blob_name)
+
+    if vector:
+
+        blob.upload_from_string(pickle.dumps(vector))
+
+    else:
+
+        blob.upload_from_filename(destination_blob_name)
+
+
+
+
+
+# Index, IndexEndpoint
+
+def create_index(display_name, dimensions=768):
+
+    """Method to create an index"""
+
+    new_index = aiplatform.MatchingEngineIndex.create_tree_ah_index(
+
+        display_name=display_name,
+
+        # contents_delta_uri = BUCKET_URI,
+
+        dimensions=dimensions,
+
+        approximate_neighbors_count=10,
+
+        distance_measure_type="DOT_PRODUCT_DISTANCE",
+
+        leaf_node_embedding_count=100,
+
+        leaf_nodes_to_search_percent=7,
+
+        index_update_method="STREAM_UPDATE",  # allowed values BATCH_UPDATE , STREAM_UPDATE
+
+        )
+
+    return new_index
+
+
+
+def create_index_endpoint(display_name):
+
+    """Method to create an index enpoint"""
+
+    new_index_endpoint = aiplatform.MatchingEngineIndexEndpoint.create(
+
+        display_name=f"{display_name}-endpoint", public_endpoint_enabled=True
+
+        )
+
+    return new_index_endpoint
+
+
+
+# Vertex store
+
+# def insert_into_vertex_datastore(documents, embeddings):
+
+#     """Method for insert embedding into vertex datastore"""
+
+#     # Initialize Datastore client
+
+#     client = datastore.Client()
+
+
+
+#     # Insert embeddings into Datastore
+
+#     for doc, embedding in zip(documents, embeddings):
+
+#         key = client.key("DocumentEmbedding", doc.id)
+
+        # entity = datastore.Entity(key=key)
+
+        # entity.update({"content": doc.content, "embedding": embedding})
+
+        # client.put(entity)
+
+
+
+def create_vector_store(project_id, project_region, project_bucket, embedding_model, index_id, index_endpoint):
+
+    """Method to create vector store"""
+
+    vector_store = VectorSearchVectorStore.from_components(
+
+        project_id=project_id,
+
+        region=project_region,
+
+        gcs_bucket_name=project_bucket,
+
+        index_id=index_id.name,
+
+        endpoint_id=index_endpoint.name,
+
+        embedding=embedding_model,
+
+        )
+
+    return vector_store
+
+
+
+query = ["what is bucket"]
+
+qry_emb = get_embedded_data(EMBEDDINGS, query)
+
+
+
+# Fetch response using semantic search
+
+def fetch_response_from_semantic_search(query_embedding, vector_store):
+
+    response = vector_store.similarity_search(query_embedding)
+
+    return response
+
+
+
+
+
+response = fetch_response_from_semantic_search(qry_emb, vector_search)
+
+
+
+# Include PDF file name in the response
+
+for res in response:
+
+    print(f"PDF File: {res['file_name']}, Response: {res['content']}")
+
+
+
+
+
+# # Fetch files from the main folder and its subfolders
+
+# ctx = init_sharepoint_config(SITE_URL)
+
+# fetch_files_from_sharepoint_folder(ctx, FOLDER_URL)
+
+
+
+
+
+# index_name = "test-tririga-index"
+
+# new_index = create_index(index_name, dimensions=DIMENSIONS)
+
+# new_index_endpoint = create_index_endpoint(index_name)
+
+
+
+# my_index = aiplatform.MatchingEngineIndex(os.environ.get("INDEX_ID"))
+
+# my_index_endpoint = aiplatform.MatchingEngineIndexEndpoint(os.environ.get("INDEX_ENDPOINT_ID"))
+
+
+
+
+
+# deploy the Index to the Index Endpoint
+
+# DEPLOYED_INDEX_ID = "test_tririga_deployed"
+
+# my_index_endpoint.deploy_index(index=my_index, deployed_index_id=DEPLOYED_INDEX_ID)
+
+
+
+
+
+# documents = read_pdfs_from_bucket(PROJECT_INPUT_BUCKET)
+
+
+
+# source_file_name = "Getting_Started_with_Google_Cloud_Platform.pdf"
+
+# documents = read_gcp_bucket_file(PROJECT_INPUT_BUCKET, source_file_name)
+
+# chunked_data = chunk_document(documents, chunk_size=1000, chunk_overlap=20)
+
+# text_data = get_text_from_chunks(chunked_data)
+
+
+
+# texts = [chunk.page_content for chunk in chunked_data]
+
+
+
+# vector_store = create_vector_store(PROJECT_ID, PROJECT_LOCATION, PROJECT_OUTPUT_BUCKET, EMBEDDINGS, my_index, my_index_endpoint)
+
+# print("VECTOR STORE", vector_store)
+
+
+
+# vector_store.add_texts(texts=texts)
+
+
+
+# vectors = get_embedded_data(EMBEDDINGS, texts)
+
+
+
+
+
+# for vector in vectors:
+
+#     print(str(vector)[:100])  # Show the first 100 characters of the vector
+
+
+
+# def clean_text(text):
+
+#         cleaned_text = re.sub(r'\u2022', '', text)  # Remove bullet points
+
+#         cleaned_text = re.sub(r'\s+', ' ', cleaned_text).strip()  # Remove extra whitespaces and strip
+
+#         return cleaned_text
+
+
+
+# with open("embed_file_GCP.json", 'w') as embed_file, open("sentence_file_GCP.json", 'w') as sentence_file:
+
+#     for sentence, embedding in zip(texts, vectors):
+
+#                     cleaned_sentence = clean_text(sentence)
+
+#                     id = str(uuid.uuid4())
+
+                   
+
+#                     embed_item = {"id": id, "embedding": embedding}
+
+#                     sentence_item = {"id": id, "sentence": cleaned_sentence}
+
+                   
+
+#                     json.dump(sentence_item, sentence_file)
+
+#                     sentence_file.write('\n')
+
+#                     json.dump(embed_item, embed_file)
+
+#                     embed_file.write('\n')
+
+
+
+                    # blob.upload_from_string(data=json.dumps(some_json_object),content_type='application/json')  
+
+
+
+# destination_blob_name = "embed_file_GCP.json"
+
+# save_file_to_bucket(PROJECT_OUTPUT_BUCKET, destination_blob_name)
+
+
+
+# destination_blob_name = "sentence_file_GCP.json"
+
+# save_file_to_bucket(PROJECT_OUTPUT_BUCKET, destination_blob_name)
+
+
+
+
+
+
+
+
+
+# query = ["what is bucket"]
+
+# qry_emb = get_embedded_data(EMBEDDINGS, query)
+
+
+
+# # Test query
+
+# response = my_index_endpoint.find_neighbors(
+
+#     deployed_index_id=os.environ.get("INDEX_DEPLOYED_ID"),
+
+#     queries=qry_emb,
+
+#     num_neighbors=10,
+
+# )
+
+
+
+# # print(response[0])
+
+
+
+# for idx, neighbor in enumerate(response[0]):
+
+#     print(idx, f"{neighbor.distance:.2f}")
+
+# query = ["what is bucket"]
+
+# qry_emb = get_embedded_data(EMBEDDINGS, query)
+
+
+
+# # Fetch response using semantic search
+
+# def fetch_response_from_semantic_search(query_embedding, vector_store):
+
+#     response = vector_store.similarity_search(query_embedding)
+
+#     return response
+
+
+
+# # vector_store = create_vector_store(PROJECT_ID, PROJECT_LOCATION, PROJECT_INPUT_BUCKET, EMBEDDINGS, my_index, my_index_endpoint)
+
+# response = fetch_response_from_semantic_search(qry_emb, vector_store)
+
+# # response = fetch_response_from_semantic_search(qry_emb)
+
+
+
+# # Include PDF file name in the response
+
+# for res in response:
+
+#     print(f"PDF File: {res['file_name']}, Response: {res['content']}")
+
+
+
+# show the result
+
+# import numpy as np
+
+
+
+# for idx, neighbor in enumerate(response[0]):
+
+#     id = np.int64(neighbor.id)
+
+#     similar = df.query("id == @id", engine="python")
+
+#     print(f"{neighbor.distance:.4f} {similar.title.values[0]}")
+
+
+
+
+
+      for this code all as to be done and stored in vector store after u have to do call the vector store and do  similairty search ..dont recreate again for vector store it as allreday stored just u call and do smilairty search
